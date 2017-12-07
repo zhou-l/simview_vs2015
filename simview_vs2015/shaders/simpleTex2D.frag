@@ -8,5 +8,6 @@ out highp vec4 fColor;
 void main()
 {
 
-	fColor = texture2D(tex2D, texc.xy);
+//	fColor = 10.0 * texture2D(tex2D, texc.xy);
+	fColor = vec4(texc.xy, 0,1);
 }

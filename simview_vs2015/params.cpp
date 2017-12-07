@@ -5,7 +5,7 @@
 Params::Params():
     _meshKDtree(3)
 {
-	VolBlockSize(4);
+	VolBlockSize(32);
 
 	ensStatNumOutliers(4);
 	ensStatNumNeighbors(8);

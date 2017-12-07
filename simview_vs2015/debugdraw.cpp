@@ -90,13 +90,17 @@ void DebugDraw::draw()
   QOpenGLContext *ctx = QOpenGLContext::currentContext();
   QOpenGLFunctions *f = ctx->functions();
 
-  m_program->bind();
-  m_object->bind();
+  if (m_program)
   {
-    f->glDrawArrays(GL_TRIANGLES, 0, m_currOffset / sizeof(DebugVertex));
+	  m_program->bind();
+	  m_object->bind();
+	  {
+		  f->glDrawArrays(GL_TRIANGLES, 0, m_currOffset / sizeof(DebugVertex));
+	  }
+	  m_object->release();
+	  m_program->release();
+
   }
-  m_object->release();
-  m_program->release();
 
   m_currOffset = 0;
 }

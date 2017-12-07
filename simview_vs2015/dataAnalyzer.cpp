@@ -183,16 +183,16 @@ void DataAnalyzer::analyzeEnsembleRuns(const KD<spatialDataPt*>& kdtree, vector<
 
 }
 
-void DataAnalyzer::createEnsembleOctree(std::vector<VolumeData*>& ensembleVols, octree* ensembleOctTree)
+void DataAnalyzer::createEnsembleOctree(std::vector<VolumeData*>& ensembleVols, octree** ensembleOctTree)
 {
 	if (ensembleVols.empty())
 	{
 		cout << "No ensemble volumes! Octree not created!" << endl;
 		return;
 	}
-	if (ensembleOctTree)
-		SAFE_DELETE(ensembleOctTree);
-	ensembleOctTree = new octree(OCT_ENSEMBLE);
+	if (*ensembleOctTree)
+		SAFE_DELETE(*ensembleOctTree);
+	*ensembleOctTree = new octree(OCT_ENSEMBLE);
 	// determine how many levels the octree has
 	UINT64VECTOR3 volDim = ensembleVols[0]->getDim();
 	float numBlocks = volDim.maxVal() / g_params.VolBlockSize();
@@ -213,17 +213,17 @@ void DataAnalyzer::createEnsembleOctree(std::vector<VolumeData*>& ensembleVols, 
 		ensembleVols[i]->pad(paddedVolDim);
 	
 	// Build a skeleton octree
-	ensembleOctTree->build(tree_levels);
+	(*ensembleOctTree)->build(tree_levels);
 	// Fill in data
-	ensembleOctTree->fillInEnsembleData(ensembleVols, blkSize);
+	(*ensembleOctTree)->fillInEnsembleData(ensembleVols, blkSize);
 
 	bool dumpNodeInfo = true;
 	if (dumpNodeInfo)
-		ensembleOctTree->beginOutputContent(std::string("ensembleOctree.txt"));
+		(*ensembleOctTree)->beginOutputContent(std::string("ensembleOctree.txt"));
 	// Analyze the volume!
-	ensembleOctTree->analyzeEnsembleData(g_params.ensVolBlocks(), g_params.ensVolBlkListDim(), _volBlkAnalyzer);
+	(*ensembleOctTree)->analyzeEnsembleData(g_params.ensVolBlocks(), g_params.ensVolBlkListDim(), _volBlkAnalyzer);
 	if (dumpNodeInfo)
-		ensembleOctTree->endOutputContent();
+		(*ensembleOctTree)->endOutputContent();
 }
 
 //void DataAnalyzer::analyzeEnsembleNodes(std::vector<EnsembleVolBlock*> ensVolBlockList, const UINT64VECTOR3 & listDim)

@@ -29,7 +29,7 @@ public:
 	void analyzeEnsembleRuns(const KD<spatialDataPt*>& kdtree, vector<vector<float> >& ensemble);
 	// Analyze with neighboring node similarity(?)
 	//void analyzeEnsembleNodes(std::vector<EnsembleVolBlock*> ensVolBlockList, const UINT64VECTOR3& listDim);
-	void createEnsembleOctree(std::vector<VolumeData*>& ensembleVols, octree* ensembleOctTree);
+	void createEnsembleOctree(std::vector<VolumeData*>& ensembleVols, octree** ensembleOctTree);
 	
 
 private:

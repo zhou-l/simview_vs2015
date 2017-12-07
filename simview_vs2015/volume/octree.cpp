@@ -125,6 +125,7 @@ void octree::endOutputContent()
 
 void octree::bfsSetLevelNodesInfo(std::vector<Eigen::MatrixXf>& M)
 {
+	cout << __FUNCTION__;
 	std::deque<octreeNode*> nqueue;
 	nqueue.push_back(_root);
 
@@ -134,9 +135,12 @@ void octree::bfsSetLevelNodesInfo(std::vector<Eigen::MatrixXf>& M)
 		nqueue.pop_front();
 
 		// get level of N
-		int l = N->_level;
+		int l = levels() - 1 - N->_level;
 		// get the adjacent matrix of that level
-		Eigen::MatrixXf lM = M.at(l);
+		Eigen::MatrixXf& lM = M[l];
+
+		//cout << "Mat dim = " << lM.rows() << ", " << lM.cols() << endl;
+
 		// set corresponding element of lM
 		UINT64 csid = volPos2SID(N->_volStartPos, l);
 		// get neighbor info
@@ -148,7 +152,9 @@ void octree::bfsSetLevelNodesInfo(std::vector<Eigen::MatrixXf>& M)
 			//lM(csid, nsid) = val;
 
 			// test: set a random value!
-			UINT64 nsid = UINT64( g_params.randGen()->rand() * float(lM.cols()) );
+			UINT64 nsid = UINT64( g_params.randGen()->rand() * float(lM.cols() - 1) );
+
+			//cout << "csid = " << csid << ", nsid = " << nsid << endl;
 			lM(csid, nsid) = g_params.randGen()->rand();
 		}
 		// push children to the queue
@@ -157,7 +163,7 @@ void octree::bfsSetLevelNodesInfo(std::vector<Eigen::MatrixXf>& M)
 				nqueue.push_back(N->_children[i]);
 		}
 	}
-
+	cout << __FUNCTION__<<"...done!" << endl;
 }
 
 void octree::octreeBuild(octreeNode* node)

@@ -83,7 +83,8 @@ QPoint prevMousePos;
 
 QObj3DView::QObj3DView(QWidget* parent) :
     QOpenGLWidget(parent),
-  m_frameCount(0)
+  m_frameCount(0),
+	m_program(NULL)
 {
 
 #ifdef    GL_DEBUG
@@ -104,43 +105,17 @@ QObj3DView::~QObj3DView()
 {
     SAFE_DELETE(m_dataLoader);
     SAFE_DELETE(m_dataAnalyzer);
-
+	SAFE_DELETE(m_program);
   makeCurrent();
   OpenGLError::popErrorHandler();
 }
+
+
 void QObj3DView::initializeGL()
 {
     makeCurrent();
-    // load data
-    vector<Vertex> verts;
-    if (loadData())
-    {
-        cout << "Data loaded successfully! Num verts = " << g_params.vertices().size() << endl;
-    }
-
-    verts = g_params.vertices();
-    // compute the proper scale/bias matrix for the vertices to place them in BBox [-0.5->0.5]
-    //FLOATAABB3D aabb;
-    //aabb.vMin = FLOATVECTOR3(FLT_MAX, FLT_MAX, FLT_MAX);
-    //aabb.vMax = FLOATVECTOR3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
-    //for (size_t i = 0; i < verts.size(); i++)
-    //{
-    //	aabb.vMin.x = MIN(aabb.vMin.x, verts[i].position().x());
-    //	aabb.vMin.y = MIN(aabb.vMin.y, verts[i].position().y());
-    //	aabb.vMin.z = MIN(aabb.vMin.z, verts[i].position().z());
-
-    //	aabb.vMax.x = MAX(aabb.vMax.x, verts[i].position().x());
-    //	aabb.vMax.y = MAX(aabb.vMax.y, verts[i].position().y());
-    //	aabb.vMax.z = MAX(aabb.vMax.z, verts[i].position().z());
-    //}
-    //FLOATVECTOR3 aabbSize = aabb.vMax - aabb.vMin;
-    //FLOATVECTOR3 invAAbbSize = FLOATVECTOR3(aabbSize.x == 0.f ? 0.f : 1.f / aabbSize.x, aabbSize.y == 0.f ? 0.f : 1.f / aabbSize.y, aabbSize.z == 0.f ? 0.f : 1.f / aabbSize.z);
-    //FLOATVECTOR3 aabbCtr = 0.5f * aabbSize + aabb.vMin;
-    //cout << "AABB of vertices = " << aabb.vMin << ";" << aabb.vMax << endl;
-    //cout << "AABB center = " << aabbCtr << endl;
-    //m_transform.setTranslation(QVector3D(-aabbCtr.x, -aabbCtr.y, -aabbCtr.z));
-
-    //m_transform.setScale(1.f*invAAbbSize.x, 1.f * invAAbbSize.y, 1.f * invAAbbSize.z);
+  
+  
     // Initialize OpenGL Backend
     initializeOpenGLFunctions();
     connect(context(), SIGNAL(aboutToBeDestroyed()), this, SLOT(teardownGL()), Qt::DirectConnection);
@@ -170,49 +145,77 @@ void QObj3DView::initializeGL()
     {
         // Create Shader (Do not release until VAO is created)
         //m_program = new OpenGLShaderProgram(this);
-        m_program = new QOpenGLShaderProgram(this);
-        m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple.vert");
-        m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple.frag");
-        m_program->link();
-        m_program->bind();
+		if (m_program == NULL)
+		{
+			m_program = new QOpenGLShaderProgram(this);
+			m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple.vert");
+			m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple.frag");
+			m_program->link();
+			m_program->bind();
 
-        // Cache Uniform Locations
-        u_modelToWorld = m_program->uniformLocation("modelToWorld");
-        u_worldToCamera = m_program->uniformLocation("worldToCamera");
-        u_cameraToView = m_program->uniformLocation("cameraToView");
-
-        // Create Buffer (Do not release until VAO is created)
-        m_vertex.create();
-        m_vertex.bind();
-        m_vertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
-        //m_vertex.allocate(&sg_vertexes, sizeof(sg_vertexes));
-        m_vertex.allocate(&verts[0], verts.size() * sizeof(Vertex));
+			// Cache Uniform Locations
+			u_modelToWorld = m_program->uniformLocation("modelToWorld");
+			u_worldToCamera = m_program->uniformLocation("worldToCamera");
+			u_cameraToView = m_program->uniformLocation("cameraToView");
+			m_program->release();
+		}
+       
 
 
-        // Create Vertex Array Object
-        m_object.create();
-        m_object.bind();
-        m_program->enableAttributeArray(0);
-        m_program->enableAttributeArray(1);
-        m_program->setAttributeBuffer(0, GL_FLOAT, Vertex::positionOffset(), Vertex::PositionTupleSize, Vertex::stride());
-        m_program->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());
+		// Bounding box
+		if (!m_objectAddOn.isCreated())
+		{
+			m_objectAddOn.create();
+			m_objectAddOn.bind();
 
-        // Release (unbind) all
-        m_object.release();
-        m_vertex.release();
-        m_program->release();
+			m_vertexAddOn.create();
+			m_vertexAddOn.bind();
+			m_vertexAddOn.setUsagePattern(QOpenGLBuffer::StaticDraw);
+			m_vertexAddOn.allocate(&sg_vertexes, sizeof(sg_vertexes));
 
 
-        m_vertexAddOn.create();
-        m_vertexAddOn.bind();
-        m_vertexAddOn.setUsagePattern(QOpenGLBuffer::StaticDraw);
-        m_vertexAddOn.allocate(&sg_vertexes, sizeof(sg_vertexes));
-        //m_vertexAddOn.allocate(&verts[0], verts.size() * sizeof(Vertex));
-        m_objectAddOn.release();
-        m_vertexAddOn.release();
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, Vertex::PositionTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, Vertex::ColorTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+
+			//m_vertexAddOn.allocate(&verts[0], verts.size() * sizeof(Vertex));
+			m_objectAddOn.release();
+			m_vertexAddOn.release();
+		}
+
+		// Create Vertex Array Object
+		vector<Vertex> verts = g_params.vertices();
+		if (!verts.empty())
+		{
+			m_object.create();
+			m_object.bind();
+
+			// Create Buffer
+			m_vertex.create();
+			m_vertex.bind();
+			m_vertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
+			m_vertex.allocate(&verts[0], verts.size() * sizeof(Vertex));
+
+
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, Vertex::PositionTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+			glEnableVertexAttribArray(1);
+			glVertexAttribPointer(1, Vertex::ColorTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+			/*	m_program->bind();
+			m_program->enableAttributeArray(0);
+			m_program->enableAttributeArray(1);
+			m_program->setAttributeBuffer(0, GL_FLOAT, Vertex::positionOffset(), Vertex::PositionTupleSize, Vertex::stride());
+			m_program->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());*/
+
+			// Release (unbind) all
+			m_object.release();
+			m_vertex.release();
+		}
+
     }
 
-    DebugDraw::initialize(this);
+    //DebugDraw::initialize(this);
 }
 
 void QObj3DView::resizeGL(int width, int height)
@@ -225,14 +228,16 @@ void QObj3DView::resizeGL(int width, int height)
 void QObj3DView::paintGL()
 {
     QOpenGLWidget::paintGL();
+	makeCurrent();
   // Clear
   PROFILER_SYNC_FRAME();
   //glClearColor(1, 1, 1, 1);
   glClearColor(0, 0, 0, 0);
   glClear(GL_COLOR_BUFFER_BIT);
-
+  glDisable(GL_DEPTH_TEST);
   // Render the scene
   PROFILER_PUSH_GPU_MARKER("Render Scene");
+  if(m_program)
   {
     PROFILER_PUSH_GPU_MARKER("Prepare Scene");
     m_program->bind();
@@ -243,15 +248,25 @@ void QObj3DView::paintGL()
         QMatrix4x4 model2world;
         model2world.setToIdentity();
       PROFILER_PUSH_GPU_MARKER("Draw Object");
-      m_object.bind();
+
       m_program->setUniformValue(u_modelToWorld, m_transform.toMatrix());
+	  // Draw bounding box
+	  m_objectAddOn.bind();
+	  glDrawArrays(GL_LINES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
+	  m_objectAddOn.release();
+
+	  m_object.bind();
       //m_program->setUniformValue(u_modelToWorld, model2world);
       //glDrawArrays(GL_TRIANGLES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
       //glDrawArrays(GL_TRIANGLES, 0, g_params.vertices().size());
       glDrawArrays(GL_POINTS, 0, GLsizei(g_params.vertices().size()));
       m_object.release();
       PROFILER_POP_GPU_MARKER();
+
+
     }
+
+
     m_program->release();
   }
   PROFILER_POP_GPU_MARKER();
@@ -260,7 +275,44 @@ void QObj3DView::paintGL()
   // Render the profiler
   PROFILER_PAINT_GL();
   DebugDraw::draw();
+  glEnable(GL_DEPTH_TEST);
+}
 
+bool QObj3DView::loadSimData()
+{
+	if(loadData())
+	{ 
+		cout << "Data loaded successfully! Num verts = " << g_params.vertices().size() << endl;
+		// load data succeeded
+		vector<Vertex> verts = g_params.vertices();
+		 //compute the proper scale/bias matrix for the vertices to place them in BBox [-0.5->0.5]
+		FLOATAABB3D aabb;
+		aabb.vMin = FLOATVECTOR3(FLT_MAX, FLT_MAX, FLT_MAX);
+		aabb.vMax = FLOATVECTOR3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+		for (size_t i = 0; i < verts.size(); i++)
+		{
+			aabb.vMin.x = MIN(aabb.vMin.x, verts[i].position().x());
+			aabb.vMin.y = MIN(aabb.vMin.y, verts[i].position().y());
+			aabb.vMin.z = MIN(aabb.vMin.z, verts[i].position().z());
+
+			aabb.vMax.x = MAX(aabb.vMax.x, verts[i].position().x());
+			aabb.vMax.y = MAX(aabb.vMax.y, verts[i].position().y());
+			aabb.vMax.z = MAX(aabb.vMax.z, verts[i].position().z());
+		}
+		FLOATVECTOR3 aabbSize = aabb.vMax - aabb.vMin;
+		FLOATVECTOR3 invAAbbSize = FLOATVECTOR3(aabbSize.x == 0.f ? 0.f : 1.f / aabbSize.x, aabbSize.y == 0.f ? 0.f : 1.f / aabbSize.y, aabbSize.z == 0.f ? 0.f : 1.f / aabbSize.z);
+		FLOATVECTOR3 aabbCtr = 0.5f * aabbSize + aabb.vMin;
+		cout << "AABB of vertices = " << aabb.vMin << ";" << aabb.vMax << endl;
+		cout << "AABB center = " << aabbCtr << endl;
+		//m_transform.setTranslation(QVector3D(-aabbCtr.x, -aabbCtr.y, -aabbCtr.z));
+
+		//m_transform.setScale(1.f*invAAbbSize.x, 1.f * invAAbbSize.y, 1.f * invAAbbSize.z);
+		// Reinitialize GL
+		initializeGL();
+		return true;
+	}
+	else
+		return false;
 }
 
 void QObj3DView::teardownGL()
@@ -272,7 +324,7 @@ void QObj3DView::teardownGL()
 
 bool QObj3DView::loadData()
 {
-    QString filePrefix = tr("C:\\MyData\\Utah_heart_ischemixa\\201701_Conductivity\\mesh\\");
+    QString filePrefix = tr("C:\\MyData\\Utah_heart_ischemia\\201701_Conductivity\\mesh\\");
     QString fileName = tr("heartPts.csv"); //tr("heartPts.csv");
     vector<Vertex> verts;
     // Load mesh file
@@ -336,9 +388,9 @@ bool QObj3DView::loadData()
         ensembleVols[i]->writeToFile(filename.toStdString().c_str(), NULL);
     }
     // Build ensemble octree
-    
-    m_dataAnalyzer->createEnsembleOctree(ensembleVols/*g_params.ensembleVols()*/, g_params.ensembleOctree());
-
+	octree* tree = g_params.ensembleOctree();
+    m_dataAnalyzer->createEnsembleOctree(ensembleVols/*g_params.ensembleVols()*/, &tree);
+	g_params.ensembleOctree(tree);
 
     // build KD-tree
     KD<spatialDataPt*>* meshKDtree = new KD<spatialDataPt*>(3);
@@ -346,7 +398,6 @@ bool QObj3DView::loadData()
     cout << "KD tree node #= " << meshKDtree->size()<<endl;
     g_params.meshKDTree(*meshKDtree);
     cout << "global KD tree node #= " << g_params.meshKDTree_unsafe().size() << endl;
-
     return true;
 }
 

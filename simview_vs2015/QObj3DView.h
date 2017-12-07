@@ -39,6 +39,9 @@ public:
   void initializeGL();
   void resizeGL(int width, int height);
   void paintGL();
+
+  bool loadSimData();  // load simulation runs and mesh and set vertex buffer
+
 protected slots:
   void teardownGL();
   void update();

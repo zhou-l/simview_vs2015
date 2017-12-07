@@ -66,6 +66,20 @@
        <layout class="QHBoxLayout" name="horizontalLayout_graphView"/>
       </widget>
      </item>
+     <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Level: </string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="horizontalSlider_level">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
     </layout>
    </widget>
   </widget>

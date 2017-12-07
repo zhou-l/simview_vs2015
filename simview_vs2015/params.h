@@ -46,8 +46,8 @@ public:
 	const std::vector<EnsembleVolBlock*> ensVolBlocks() const { return _ensembleVolBlocks; }
 	void ensVolBlocks(const std::vector<EnsembleVolBlock*>& val) { _ensembleVolBlocks = val; }
 
+	void ensembleOctree(octree* tree) { _ensembleOctree = tree; }
 	octree* ensembleOctree() { return _ensembleOctree; }
-
 	MTRand* randGen() const { return _randGen; }
 private:
     std::vector<std::vector<float>> _pointData;
