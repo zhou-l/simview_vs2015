@@ -2,6 +2,8 @@
 #include "QObj3DView.h"
 #include "QGLAdjMatrixView.h"
 #include <QKeyEvent>
+#include "global.h"
+#include "Volume/octree.h"
 
 QSimView::QSimView(QWidget* parent):
 	QMainWindow(parent),
@@ -22,6 +24,7 @@ void QSimView::loadData()
 	if (_objView->loadSimData())
 	{
 		_graphView->init();
+		horizontalSlider_level->setMaximum(MAX(0, g_params.ensembleOctree()->levels() - 1));
 	}
 }
 
@@ -70,4 +73,16 @@ void QSimView::setupUi()
 
 
 	//resize(QSize(1024, 768));
+}
+
+void QSimView::octreeLevelChanged(int value)
+{
+	if (g_params.ensembleOctree())
+	{
+		if (value < g_params.ensembleOctree()->levels())
+		{
+			g_params.setOctreeLevel(value);
+			_graphView->octreeLevelChanged(g_params.octreeLevel());
+		}
+	}
 }

@@ -79,15 +79,18 @@ void QGLAdjMatrixView::paintGL()
 	_object.bind();
 
 	// bind current texture
-
+	glActiveTexture(GL_TEXTURE0);
 	if (!_texAdjMatrixList.empty())
 	{
 		int curTexId = -1;
 		if( _curTexInList < _texAdjMatrixList.size())
 		{
 			curTexId = _texAdjMatrixList[_curTexInList];
-			if(curTexId > 0)
+			if (curTexId > 0)
+			{
+		
 				glBindTexture(GL_TEXTURE_2D, curTexId);
+			}
 		}
 	}
 	
@@ -133,8 +136,10 @@ void QGLAdjMatrixView::init()
 		int lw = nodesPerSide * nodesPerSide * nodesPerSide;
 		cout << "Level = " << i << ", mat cols = " << lw << endl;
 		// texture with a single mipmap level
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		_texAdjMatrixList.push_back(texId);
 
@@ -164,9 +169,27 @@ void QGLAdjMatrixView::init()
 
 		GLuint texId = _texAdjMatrixList[i];
 		glBindTexture(GL_TEXTURE_2D, texId);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, lw, lw, 0, GL_RGBA, GL_FLOAT, matContent);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, lw, lw, 0, GL_RED, GL_FLOAT, matContent);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
+
+		// Get tex image content
+		glBindTexture(GL_TEXTURE_2D, texId);
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_R32F, GL_FLOAT, matContent);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		QString ofName = QString("matContentLevel%1.txt").arg(i);
+		ofstream ofMatContent(ofName.toStdString().c_str());
+		for (UINT64 r = 0; r < UINT64(lw); r++)
+		{
+			for (UINT64 c = 0; c < UINT64(lw); c++)
+			{
+				ofMatContent << matContent[r * UINT64(lw) + c] << " ";
+			
+			}
+			ofMatContent << endl;
+		}
+		ofMatContent.close();
 	}
 	cout << __FUNCTION__<<"...done!" << endl;
 }
@@ -217,4 +240,10 @@ void QGLAdjMatrixView::makeObject()
 	_vbo.bind();
 	_vbo.allocate(vertData.constData(), vertData.count() * sizeof(GLfloat));
 	_vbo.release();
+}
+
+void QGLAdjMatrixView::octreeLevelChanged(int val)
+{
+	_curTexInList = val;
+	update();
 }

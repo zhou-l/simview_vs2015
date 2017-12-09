@@ -1,13 +1,14 @@
-#version 330
+#version 330 compatibility
 
 uniform sampler2D  tex2D;
-varying mediump vec4 texc;
+in vec4 texc;
 
-out highp vec4 fColor;
+out vec4 fColor;
 
 void main()
 {
 
-//	fColor = 10.0 * texture2D(tex2D, texc.xy);
-	fColor = vec4(texc.xy, 0,1);
+	float val =  10 * texture(tex2D, texc.xy).r;
+	fColor = vec4(val, 0, 0, 1);
+	fColor = vec4(texc.xy, val,1);
 }

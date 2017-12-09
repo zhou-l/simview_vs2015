@@ -21,8 +21,9 @@ public:
 	void resizeGL(int width, int height);
 	void paintGL();
 
-	void init();
-
+	void init();	
+public slots:
+	void octreeLevelChanged(int val);
 	
 private:
 	void destroyTexList();

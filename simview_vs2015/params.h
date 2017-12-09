@@ -48,7 +48,11 @@ public:
 
 	void ensembleOctree(octree* tree) { _ensembleOctree = tree; }
 	octree* ensembleOctree() { return _ensembleOctree; }
+
 	MTRand* randGen() const { return _randGen; }
+
+	void setOctreeLevel(int level) { _currOctreeLevel = level; }
+	int octreeLevel() const { return _currOctreeLevel; }
 private:
     std::vector<std::vector<float>> _pointData;
     std::vector<std::vector<float>> _ensembleData;
@@ -56,6 +60,7 @@ private:
 	std::vector<EnsembleVolBlock*>  _ensembleVolBlocks; // a list of all ensemble blocks
 	UINT64VECTOR3                   _ensembleVolBlkListDim; // number of ensemble blocks in each dimension in the list
 	octree*                         _ensembleOctree; // the octree of ensemble blocks
+	int                             _currOctreeLevel; // current octree level
 
     std::vector<Vertex>             _vertices;
     KD<spatialDataPt*>              _meshKDtree;
@@ -66,6 +71,7 @@ private:
     int                             _ensStatNumNeighbors;
 
 	MTRand*                          _randGen;
+
 };
 
 #endif // PARAMS_H
