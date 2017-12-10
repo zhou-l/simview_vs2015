@@ -145,7 +145,7 @@ void QGLAdjMatrixView::init()
 	//	cout<<"mat level = "<<i<<endl
 	//		<<_adjMatList[i]<<endl;
 	//}
-	for (int i = 0; i < levels - 1; i++)
+	for (int i = 0; i < levels; i++)
 	{
 		int nodesPerSide = 1 << i;
 		int lw = nodesPerSide * nodesPerSide * nodesPerSide;
@@ -156,24 +156,24 @@ void QGLAdjMatrixView::init()
 		float* texContent = new float[mat.rows() * mat.cols() * 3];
 		memset(texContent, 0, mat.rows() * mat.cols() * 3 * sizeof(float));
 
-		QString ofName = QString("matContentLevel%1before.txt").arg(i);
-		ofstream ofMatContent1(ofName.toStdString().c_str());
-		for (UINT64 r = 0; r < UINT64(lw); r++)
-		{
-			for (UINT64 c = 0; c < UINT64(lw); c++)
-			{
-				UINT64 idx = r * UINT64(lw) + c;
-		
-			
-				texContent[3 * idx + 0] = matContent[idx];
-				texContent[3 * idx + 1] = matContent[idx];
-				texContent[3 * idx + 2] = matContent[idx];
+		//QString ofName = QString("matContentLevel%1before.txt").arg(i);
+		//ofstream ofMatContent1(ofName.toStdString().c_str());
+		//for (UINT64 r = 0; r < UINT64(lw); r++)
+		//{
+		//	for (UINT64 c = 0; c < UINT64(lw); c++)
+		//	{
+		//		UINT64 idx = r * UINT64(lw) + c;
+		//
+		//	
+		//		texContent[3 * idx + 0] = matContent[idx];
+		//		texContent[3 * idx + 1] = matContent[idx];
+		//		texContent[3 * idx + 2] = matContent[idx];
 
-				ofMatContent1 << texContent[3 * idx] << " ";
-			}
-			ofMatContent1 << endl;
-		}
-		ofMatContent1.close();
+		//		ofMatContent1 << texContent[3 * idx] << " ";
+		//	}
+		//	ofMatContent1 << endl;
+		//}
+		//ofMatContent1.close();
 		// create GPU tex handle
 		GLuint texId = 0;
 		glGenTextures(1, &texId);
@@ -181,11 +181,11 @@ void QGLAdjMatrixView::init()
 
 		cout << "Level = " << i << ", mat cols = " << lw << endl;
 		// texture with a single mipmap level
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, lw, lw, 0, GL_RGB, GL_FLOAT, texContent);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, lw, lw, 0, GL_RED, GL_FLOAT, matContent);
 
 		GLenum err = glGetError();
 		check_gl_error();
@@ -194,27 +194,28 @@ void QGLAdjMatrixView::init()
 
 
 
-		// Get tex image content
-		memset(texContent, 0, UINT64(lw) * UINT64(lw) * 3 * sizeof(float));
+		//// Get tex image content
+		//memset(texContent, 0, UINT64(lw) * UINT64(lw) * 3 * sizeof(float));
 
-		glBindTexture(GL_TEXTURE_2D, texId);
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texContent);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		check_gl_error();
-		ofName = QString("matContentLevel%1.txt").arg(i);
-		ofstream ofMatContent(ofName.toStdString().c_str());
-		for (UINT64 r = 0; r < UINT64(lw); r++)
-		{
-			for (UINT64 c = 0; c < UINT64(lw); c++)
-			{
-				ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
-			
-			}
-			ofMatContent << endl;
-		}
-		ofMatContent.close();
+		//glBindTexture(GL_TEXTURE_2D, texId);
+		//glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, matContent);
+		//glBindTexture(GL_TEXTURE_2D, 0);
+		//check_gl_error();
+		//ofName = QString("matContentLevel%1.txt").arg(i);
+		//ofstream ofMatContent(ofName.toStdString().c_str());
+		//for (UINT64 r = 0; r < UINT64(lw); r++)
+		//{
+		//	for (UINT64 c = 0; c < UINT64(lw); c++)
+		//	{
+		//		ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
+		//	
+		//	}
+		//	ofMatContent << endl;
+		//}
+		//ofMatContent.close();
 	}
 	cout << __FUNCTION__<<"...done!" << endl;
+	update();
 }
 
 void QGLAdjMatrixView::destroyTexList()

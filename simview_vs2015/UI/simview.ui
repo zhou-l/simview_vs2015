@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1916</width>
-    <height>1592</height>
+    <height>1289</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -48,7 +48,7 @@
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget_graphView_2">
    <property name="floating">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
