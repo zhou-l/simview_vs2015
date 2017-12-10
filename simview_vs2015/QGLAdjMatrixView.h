@@ -6,6 +6,7 @@
 #include "OpenGL\OpenGLVertexArrayObject"
 #include <vector>
 #include "Eigen/SparseCore"
+#include "FragmentToy.h"
 
 typedef Eigen::SparseMatrix<double> SpDbMat;
 
@@ -35,6 +36,7 @@ private:
 	OpenGLVertexArrayObject _object; // vao
 	int                   _curTexInList; // item index of the current texture in the texList;
 
+	FragmentToy m_renderer;
 private:
 	// The list of adjacent matrices for graph representation
 	std::vector<Eigen::MatrixXf> _adjMatList; 
