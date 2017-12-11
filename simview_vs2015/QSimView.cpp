@@ -61,7 +61,7 @@ void QSimView::setupUi()
 	_objView->resize(QSize(800, 600));
 
 	// Create the graph viewer
-	_graphView = new QGLAdjMatrixView(this);
+	_graphView = new QGLAdjMatrixView();
 	horizontalLayout_graphView->addWidget(_graphView);
 	_graphView->resize(QSize(600, 600));
 

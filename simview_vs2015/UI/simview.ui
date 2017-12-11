@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1916</width>
-    <height>1592</height>
+    <height>1289</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -49,9 +49,6 @@
   <widget class="QDockWidget" name="dockWidget_graphView_2">
    <property name="floating">
     <bool>false</bool>
-   </property>
-   <property name="features">
-    <set>QDockWidget::DockWidgetClosable|QDockWidget::DockWidgetMovable</set>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>
