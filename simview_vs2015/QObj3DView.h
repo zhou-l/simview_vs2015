@@ -82,7 +82,7 @@ private:
   int u_cameraToView;
   QMatrix4x4 m_projection;
   Camera3D m_camera;
-  Transform3D m_transform;
+  QMatrix4x4 m_transform;
 
   // Data loader
   DataLoader*     m_dataLoader;

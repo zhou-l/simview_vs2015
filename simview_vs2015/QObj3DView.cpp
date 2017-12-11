@@ -249,12 +249,14 @@ void QObj3DView::paintGL()
         model2world.setToIdentity();
       PROFILER_PUSH_GPU_MARKER("Draw Object");
 
-      m_program->setUniformValue(u_modelToWorld, m_transform.toMatrix());
+	  m_program->setUniformValue(u_modelToWorld, model2world);
 	  // Draw bounding box
 	  m_objectAddOn.bind();
-	  glDrawArrays(GL_LINES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
+	  glDrawArrays(GL_LINE_LOOP, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
 	  m_objectAddOn.release();
 
+	  model2world = m_transform;
+	  m_program->setUniformValue(u_modelToWorld, model2world);
 	  m_object.bind();
       //m_program->setUniformValue(u_modelToWorld, model2world);
       //glDrawArrays(GL_TRIANGLES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
@@ -300,13 +302,22 @@ bool QObj3DView::loadSimData()
 			aabb.vMax.z = MAX(aabb.vMax.z, verts[i].position().z());
 		}
 		FLOATVECTOR3 aabbSize = aabb.vMax - aabb.vMin;
-		FLOATVECTOR3 invAAbbSize = FLOATVECTOR3(aabbSize.x == 0.f ? 0.f : 1.f / aabbSize.x, aabbSize.y == 0.f ? 0.f : 1.f / aabbSize.y, aabbSize.z == 0.f ? 0.f : 1.f / aabbSize.z);
+		float longestSide = aabbSize.maxVal();
+		float scaleFactor = 1.0f / longestSide;
 		FLOATVECTOR3 aabbCtr = 0.5f * aabbSize + aabb.vMin;
 		cout << "AABB of vertices = " << aabb.vMin << ";" << aabb.vMax << endl;
 		cout << "AABB center = " << aabbCtr << endl;
-		//m_transform.setTranslation(QVector3D(-aabbCtr.x, -aabbCtr.y, -aabbCtr.z));
-
-		//m_transform.setScale(1.f*invAAbbSize.x, 1.f * invAAbbSize.y, 1.f * invAAbbSize.z);
+		// translate
+		QMatrix4x4 matTranslate;
+		matTranslate.translate(QVector3D(-aabbCtr.x, -aabbCtr.y, -aabbCtr.z));
+		qWarning() << matTranslate << endl;
+		// scale
+		QMatrix4x4 matScale;
+		matScale.scale(QVector3D(scaleFactor, scaleFactor, scaleFactor));
+		qWarning() << matScale << endl;
+	
+		m_transform = matScale * matTranslate;
+		qWarning() << m_transform << endl;
 		// Reinitialize GL
 		initializeGL();
 		return true;

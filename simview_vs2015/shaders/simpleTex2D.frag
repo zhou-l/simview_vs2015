@@ -1,16 +1,17 @@
-#version 330 compatibility
+#version 330
 
 uniform sampler2D  tex2D;
-in vec4 texc;
+in mediump vec4 texc;
 
+out vec4 fColor;
 
 void main()
 {
 	vec2 samplePos = vec2(texc.xy);
-	vec3 val =   texture(tex2D, samplePos).xyz;
+	vec3 val =  100 *  texture(tex2D, samplePos).xyz;
 	if (length(val) > 0.0)
-		gl_FragColor = vec4(1.1, 0.2, 0.8, 1);
+		fColor = vec4(samplePos.x, 1.0 - samplePos.y, 0.8, 1);
 	else
-		gl_FragColor = vec4(samplePos, 0, 1);
+		fColor = vec4(samplePos, 0, 1);
 	//fColor = vec4(texc.xy, val,1);
 }

@@ -1,7 +1,7 @@
 #include "QGLAdjMatrixView.h"
 #include "global.h"
 #include "volume\octree.h"
-#include "GLError.h"
+//#include "GLError.h"
 using namespace std;
 
 #define PROGRAM_VERTEX_ATTRIBUTE 0
@@ -11,8 +11,9 @@ using namespace std;
 QGLAdjMatrixView::QGLAdjMatrixView(QWidget* parent) :
 	QOpenGLWidget(parent),
 	_program(NULL),
-	_curTexInList(0),
-	m_renderer("./shaders/simpleTextured2D.frag")
+	_curTexInList(0)
+	//,
+	//m_renderer("./shaders/simpleTextured2D.frag")
 {
 
 }
@@ -70,8 +71,7 @@ void QGLAdjMatrixView::resizeGL(int width, int height)
 
 void QGLAdjMatrixView::paintGL()
 {
-
-	//glClearColor(1.f, 1.f, 1.f, 1.f);
+	makeCurrent();
 	glClearColor(0.f, 0.f, 0.f, 0.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -176,45 +176,53 @@ void QGLAdjMatrixView::init()
 		ofMatContent1.close();
 		// create GPU tex handle
 		GLuint texId = 0;
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 		glGenTextures(1, &texId);
 		glBindTexture(GL_TEXTURE_2D, texId);
 
 		cout << "Level = " << i << ", mat cols = " << lw << endl;
 		// texture with a single mipmap level
+	
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, lw, lw, 0, GL_RGB, GL_FLOAT, texContent);
-
-		GLenum err = glGetError();
-		check_gl_error();
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, lw, lw, 0, GL_RED, GL_FLOAT, matContent);
+		
+		//GLenum err = glGetError();
+		//check_gl_error();
 		glBindTexture(GL_TEXTURE_2D, 0);
 		_texAdjMatrixList.push_back(texId);
-
+		cout << "TexId generated = " << texId << endl;
 
 
 		// Get tex image content
-		memset(texContent, 0, UINT64(lw) * UINT64(lw) * 3 * sizeof(float));
+		memset(matContent, 0, UINT64(lw) * UINT64(lw) * sizeof(float));
 
-		glBindTexture(GL_TEXTURE_2D, texId);
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, texContent);
+		glBindTexture(GL_TEXTURE_2D, _texAdjMatrixList.back());
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, matContent);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		check_gl_error();
+		//check_gl_error();
 		ofName = QString("matContentLevel%1.txt").arg(i);
 		ofstream ofMatContent(ofName.toStdString().c_str());
 		for (UINT64 r = 0; r < UINT64(lw); r++)
 		{
 			for (UINT64 c = 0; c < UINT64(lw); c++)
 			{
-				ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
+				//ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
+				ofMatContent << matContent[(r * UINT64(lw) + c)] << " ";
 			
 			}
 			ofMatContent << endl;
 		}
 		ofMatContent.close();
 	}
+
+	for (size_t i = 0; i < _texAdjMatrixList.size(); i++)
+		cout << _texAdjMatrixList[i] << endl;
 	cout << __FUNCTION__<<"...done!" << endl;
+	update();
 }
 
 void QGLAdjMatrixView::destroyTexList()
