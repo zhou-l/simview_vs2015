@@ -14,6 +14,12 @@
    <string>SimView</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="minimumSize">
+    <size>
+     <width>400</width>
+     <height>400</height>
+    </size>
+   </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="0">
      <widget class="QFrame" name="frame_objView">
@@ -49,6 +55,12 @@
   <widget class="QDockWidget" name="dockWidget_graphView_2">
    <property name="floating">
     <bool>false</bool>
+   </property>
+   <property name="features">
+    <set>QDockWidget::NoDockWidgetFeatures</set>
+   </property>
+   <property name="windowTitle">
+    <string>Graph View</string>
    </property>
    <attribute name="dockWidgetArea">
     <number>1</number>

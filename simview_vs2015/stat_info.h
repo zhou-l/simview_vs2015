@@ -26,6 +26,7 @@ public:
 			<< v._var << endl
 			<< v._median << endl
 			<< v._min << endl << v._max << endl;// << _statDists;
+
 		return os;
 	}
 

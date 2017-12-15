@@ -152,7 +152,6 @@ void QObj3DView::initializeGL()
 			m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple.frag");
 			m_program->link();
 			m_program->bind();
-
 			// Cache Uniform Locations
 			u_modelToWorld = m_program->uniformLocation("modelToWorld");
 			u_worldToCamera = m_program->uniformLocation("worldToCamera");

@@ -143,6 +143,7 @@
     <ClCompile Include="dataloader.cpp" />
     <ClCompile Include="debugdraw.cpp" />
     <ClCompile Include="frameresult.cpp" />
+    <ClCompile Include="FuncBoxPlot.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_profiler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -216,6 +217,7 @@
     <ClInclude Include="debugdraw.h" />
     <ClInclude Include="debugvertex.h" />
     <ClInclude Include="frameresult.h" />
+    <ClInclude Include="FuncBoxPlot.h" />
     <ClInclude Include="GeneratedFiles\ui_simview.h" />
     <ClInclude Include="geometry.h" />
     <ClInclude Include="GLError.h" />
@@ -361,6 +363,7 @@
     <None Include="shaders\simple.vert" />
     <None Include="shaders\simple2Dview.vert" />
     <None Include="shaders\simpleTex2D.frag" />
+    <None Include="shaders\simpleTex2DColormapped.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

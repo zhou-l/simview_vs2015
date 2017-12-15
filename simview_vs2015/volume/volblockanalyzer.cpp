@@ -148,7 +148,10 @@ void VolBlockAnalyzer::ensemble_neighborBlocksAnalysis(const std::vector<Ensembl
 	UINT64 curId = (curNodePos.z * ebListDim.y + curNodePos.y) * ebListDim.x + curNodePos.x;
 	int numNeighbors = g_params.ensStatNumNeighbors();
 	if (numNeighbors != 8 && numNeighbors != 27)
+	{
 		numNeighbors = 8;
+		g_params.ensStatNumNeighbors(numNeighbors); // force to reset # of neighbors
+	}
 	blockStats._statDists.resize(numNeighbors);
 	// check the neighborhood
 	int cnt = 0;

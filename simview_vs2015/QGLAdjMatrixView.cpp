@@ -31,35 +31,121 @@ QGLAdjMatrixView::~QGLAdjMatrixView()
 
 void QGLAdjMatrixView::initializeGL()
 {
-	initializeOpenGLFunctions();
-	makeObject();
+
+	if (!_vbo.isCreated())
+	{
+		initializeOpenGLFunctions();
+		makeObject();
+	}
 
 
 	glDisable(GL_DEPTH_TEST);
 
-	_program = new QOpenGLShaderProgram;
-	_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple2Dview.vert");
-	_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simpleTex2D.frag");
-	_program->bindAttributeLocation("position", PROGRAM_VERTEX_ATTRIBUTE);
-	_program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
-	_program->link();
+	if (_program == NULL)
+	{
+		_program = new QOpenGLShaderProgram;
+		_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple2Dview.vert");
+		_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simpleTex2DColormapped.frag");
+		_program->bindAttributeLocation("position", PROGRAM_VERTEX_ATTRIBUTE);
+		_program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
+		_program->link();
 
-	_program->bind();
-	_program->setUniformValue("tex2D", 0);
+		_program->bind();
+		_program->setUniformValue("tex2D", 0);
+		_program->setUniformValue("flipY", true);
 
-	// Create object
-	_vbo.bind();
-	_object.create();
-	_object.bind();
+		// Create object
+		_vbo.bind();
+		_object.create();
+		_object.bind();
 
-	_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
-	_program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-	_program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat)); // a vertex contains 5 float: 3-position, 2-tex
-	_program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
+		_program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+		_program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
+		_program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 3, 5 * sizeof(GLfloat)); // a vertex contains 5 float: 3-position, 2-tex
+		_program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT, 3 * sizeof(GLfloat), 2, 5 * sizeof(GLfloat));
 
-	_object.release();
-	_vbo.release();
-	_program->release();
+		_object.release();
+		_vbo.release();
+		_program->release();
+
+	}
+
+	// Destroy the list of textures if there's anything inside
+	if (!_texAdjMatrixList.empty())
+	{
+		destroyTexList();
+	}
+
+	if (!_adjMatList.empty())
+	{
+		if (_adjMatList[0].cols() > 0) // make sure the matrices do have elements
+		{
+			// Setup texture
+			// upload to the GPU
+
+			//for (size_t i = 0; i < _adjMatList.size(); i++)
+			//{
+			//	cout<<"mat level = "<<i<<endl
+			//		<<_adjMatList[i]<<endl;
+			//}
+			for (int i = 0; i < int(_adjMatList.size()); i++)
+			{
+				int nodesPerSide = 1 << i;
+				int lw = nodesPerSide * nodesPerSide * nodesPerSide;
+				// Get matrix content
+				Eigen::MatrixXf mat = _adjMatList.at(i);
+				float* matContent = mat.data();
+				// create GPU tex handle
+				GLuint texId = 0;
+				glPixelStorei(GL_PACK_ALIGNMENT, 1);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glGenTextures(1, &texId);
+				glBindTexture(GL_TEXTURE_2D, texId);
+
+				cout << "Level = " << i << ", mat cols = " << lw << endl;
+				// texture with a single mipmap level
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, lw, lw, 0, GL_RED, GL_FLOAT, matContent);
+
+				//GLenum err = glGetError();
+				//check_gl_error();
+				glBindTexture(GL_TEXTURE_2D, 0);
+				_texAdjMatrixList.push_back(texId);
+				cout << "TexId generated = " << texId << endl;
+
+
+				// Get tex image content
+				memset(matContent, 0, UINT64(lw) * UINT64(lw) * sizeof(float));
+
+				glBindTexture(GL_TEXTURE_2D, _texAdjMatrixList.back());
+				glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, matContent);
+				glBindTexture(GL_TEXTURE_2D, 0);
+				//check_gl_error();
+				QString ofName = QString("matContentLevel%1.txt").arg(i);
+				ofstream ofMatContent(ofName.toStdString().c_str());
+				for (UINT64 r = 0; r < UINT64(lw); r++)
+				{
+					for (UINT64 c = 0; c < UINT64(lw); c++)
+					{
+						//ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
+						ofMatContent << matContent[(r * UINT64(lw) + c)] << " ";
+					
+					}
+					ofMatContent << endl;
+				}
+				ofMatContent.close();
+			}
+
+			for (size_t i = 0; i < _texAdjMatrixList.size(); i++)
+				cout << _texAdjMatrixList[i] << endl;
+		}
+		else
+			_adjMatList.clear();
+	}
 
 }
 
@@ -76,7 +162,6 @@ void QGLAdjMatrixView::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	_program->bind();
-	_program->setUniformValue("tex2D", 0);
 	_object.bind();
 
 	// bind current texture
@@ -102,16 +187,10 @@ void QGLAdjMatrixView::paintGL()
 
 }
 
-void QGLAdjMatrixView::init()
+void QGLAdjMatrixView::initData()
 {
-	// Destroy the list of textures if there's anything inside
-	if (!_texAdjMatrixList.empty())
-	{
-		destroyTexList();
-		// destroy CPU storage
-		_adjMatList.clear();
-	}
-
+	
+	_adjMatList.clear();
 	// get data from the octree
 	octree* oct_tree = g_params.ensembleOctree();
 
@@ -130,7 +209,7 @@ void QGLAdjMatrixView::init()
 		int nodesPerSide = 1 << i;
 		int lw = nodesPerSide * nodesPerSide * nodesPerSide;
 		// allocate CPU memories
-		Eigen::MatrixXf M(lw, lw);
+		Eigen::MatrixXf M = Eigen::MatrixXf::Constant(lw, lw, 0.0f);
 		_adjMatList.push_back(M);
 
 	}
@@ -138,90 +217,11 @@ void QGLAdjMatrixView::init()
 	// set adjacent matrix content
 	oct_tree->bfsSetLevelNodesInfo(_adjMatList);
 
-	// upload to the GPU
 	
-	//for (size_t i = 0; i < _adjMatList.size(); i++)
-	//{
-	//	cout<<"mat level = "<<i<<endl
-	//		<<_adjMatList[i]<<endl;
-	//}
-	for (int i = 0; i < levels - 1; i++)
-	{
-		int nodesPerSide = 1 << i;
-		int lw = nodesPerSide * nodesPerSide * nodesPerSide;
-		// Get matrix content
-		Eigen::MatrixXf mat = _adjMatList.at(i);
-		float* matContent = mat.data();
-
-		float* texContent = new float[mat.rows() * mat.cols() * 3];
-		memset(texContent, 0, mat.rows() * mat.cols() * 3 * sizeof(float));
-
-		QString ofName = QString("matContentLevel%1before.txt").arg(i);
-		ofstream ofMatContent1(ofName.toStdString().c_str());
-		for (UINT64 r = 0; r < UINT64(lw); r++)
-		{
-			for (UINT64 c = 0; c < UINT64(lw); c++)
-			{
-				UINT64 idx = r * UINT64(lw) + c;
-		
-			
-				texContent[3 * idx + 0] = matContent[idx];
-				texContent[3 * idx + 1] = matContent[idx];
-				texContent[3 * idx + 2] = matContent[idx];
-
-				ofMatContent1 << texContent[3 * idx] << " ";
-			}
-			ofMatContent1 << endl;
-		}
-		ofMatContent1.close();
-		// create GPU tex handle
-		GLuint texId = 0;
-		glPixelStorei(GL_PACK_ALIGNMENT, 1);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glGenTextures(1, &texId);
-		glBindTexture(GL_TEXTURE_2D, texId);
-
-		cout << "Level = " << i << ", mat cols = " << lw << endl;
-		// texture with a single mipmap level
-	
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, lw, lw, 0, GL_RED, GL_FLOAT, matContent);
-		
-		//GLenum err = glGetError();
-		//check_gl_error();
-		glBindTexture(GL_TEXTURE_2D, 0);
-		_texAdjMatrixList.push_back(texId);
-		cout << "TexId generated = " << texId << endl;
-
-
-		// Get tex image content
-		memset(matContent, 0, UINT64(lw) * UINT64(lw) * sizeof(float));
-
-		glBindTexture(GL_TEXTURE_2D, _texAdjMatrixList.back());
-		glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, matContent);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		//check_gl_error();
-		ofName = QString("matContentLevel%1.txt").arg(i);
-		ofstream ofMatContent(ofName.toStdString().c_str());
-		for (UINT64 r = 0; r < UINT64(lw); r++)
-		{
-			for (UINT64 c = 0; c < UINT64(lw); c++)
-			{
-				//ofMatContent << texContent[3 * (r * UINT64(lw) + c)] << " ";
-				ofMatContent << matContent[(r * UINT64(lw) + c)] << " ";
-			
-			}
-			ofMatContent << endl;
-		}
-		ofMatContent.close();
-	}
-
-	for (size_t i = 0; i < _texAdjMatrixList.size(); i++)
-		cout << _texAdjMatrixList[i] << endl;
 	cout << __FUNCTION__<<"...done!" << endl;
+	// Reinitialize opengl
+	initializeGL();
+	// Update rendering
 	update();
 }
 

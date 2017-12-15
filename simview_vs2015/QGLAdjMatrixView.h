@@ -22,7 +22,7 @@ public:
 	void resizeGL(int width, int height);
 	void paintGL();
 
-	void init();	
+	void initData();	
 public slots:
 	void octreeLevelChanged(int val);
 	
@@ -31,6 +31,9 @@ private:
 	void makeObject();
 	// opengl objects
 	std::vector<GLuint>   _texAdjMatrixList; // array of textures storing all levels of the adjacency matrices
+	std::vector<GLuint>   _texNodeInfoList;  // array of textures holding node information of all levels
+
+
 	QOpenGLShaderProgram* _program;
 	QOpenGLBuffer         _vbo; // the buffer of the object
 	OpenGLVertexArrayObject _object; // vao
@@ -42,6 +45,9 @@ private:
 	std::vector<Eigen::MatrixXf> _adjMatList; 
 	// sparse matrix version for later extension
 	std::vector<SpDbMat>         _adjSpMatList;
+
+	// Matrix of node information
+	std::vector<Eigen::MatrixXf> _nodeInfoMatList;
 
 };
 

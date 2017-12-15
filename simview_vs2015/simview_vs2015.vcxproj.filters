@@ -146,6 +146,9 @@
     <ClCompile Include="OpenGL\openglerror.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FuncBoxPlot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="simview.qrc">
@@ -273,6 +276,9 @@
     <ClInclude Include="GLError.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FuncBoxPlot.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\debug.frag">
@@ -291,6 +297,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="shaders\simpleTex2D.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="shaders\simpleTex2DColormapped.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

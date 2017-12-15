@@ -23,7 +23,7 @@ void QSimView::loadData()
 {
 	if (_objView->loadSimData())
 	{
-		_graphView->init();
+		_graphView->initData();
 		horizontalSlider_level->setMaximum(MAX(0, g_params.ensembleOctree()->levels() - 1));
 	}
 }

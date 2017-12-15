@@ -136,27 +136,73 @@ void octree::bfsSetLevelNodesInfo(std::vector<Eigen::MatrixXf>& M)
 
 		// get level of N
 		int l = levels() - 1 - N->_level;
+		UINT64 nl = UINT64(1 << l);
 		// get the adjacent matrix of that level
 		Eigen::MatrixXf& lM = M[l];
 
 		//cout << "Mat dim = " << lM.rows() << ", " << lM.cols() << endl;
-
+		UINT64VECTOR3 volDim(nl, nl, nl);
 		// set corresponding element of lM
-		UINT64 csid = volPos2SID(N->_volStartPos, l);
+		UINT64 csid = normVolPos2SID(N->_volStartPos, l);
+		UINT64VECTOR3 cVox = normVolPos2Voxel(N->_volStartPos, l);
 		// get neighbor info
-		for (int n = 0; n < g_params.ensStatNumNeighbors(); n++)
+		int cnt = 0;
+		int numNeighbors = g_params.ensStatNumNeighbors();
+		for (int nz = -1; nz <= 1; nz++)
 		{
-			// TODO: get neighbor information
-			//UINT64 nsid = volPos2SID(); // get neighbor sid
-			//// set matrix item for connectivity value?
-			//lM(csid, nsid) = val;
+			for (int ny = -1; ny <= 1; ny++)
+			{
+				for (int nx = -1; nx <= 1; nx++)
+				{
+					if (cnt > numNeighbors)
+						break;
+					if (nx == 0 && ny == 0 && nz == 0)
+					{
+						continue;
+	
+					}
 
-			// test: set a random value!
-			UINT64 nsid = UINT64( g_params.randGen()->rand() * float(lM.cols() - 1) );
+					INTVECTOR3 nVox = INTVECTOR3(int(cVox.x) + nx, int(cVox.y) + ny, int(cVox.z) + nz);
+					if (numNeighbors == 8)
+					{
+						if (abs(nx) + abs(ny) + abs(nz) > 1)
+							continue; // just consider voxels that are 1-voxel away from center
+					}
+					if (nVox.minVal() >= 0 && nVox.x < volDim.x && nVox.y < volDim.y && nVox.z < volDim.z)
+					{
+						UINT64 nsid = (UINT64(nVox.z) * volDim.y + UINT64(nVox.y)) * volDim.x + UINT64(nVox.x);
+						// Set the matrix element with the normalized sum of the stat distance
 
-			//cout << "csid = " << csid << ", nsid = " << nsid << endl;
-			lM(csid, nsid) = g_params.randGen()->rand();
+						float sum = 0.0f;
+						
+						if (!N->_statInfo._statDists[cnt].empty())
+						{
+							sum = std::accumulate(N->_statInfo._statDists[cnt].begin(), N->_statInfo._statDists[cnt].end(), 0);
+							//sum /= float(N->_statInfo._statDists[cnt].size());
+						}
+						lM(csid, nsid) = sum * 1000.0f;
+					}
+					cnt++;
+				}
+			}
 		}
+		
+
+		//// TEST: set random numbers for testing
+		//for (int n = 0; n < g_params.ensStatNumNeighbors(); n++)
+		//{
+		//	// TODO: get neighbor information
+		//	//UINT64 nsid = volPos2SID(); // get neighbor sid
+		//	//// set matrix item for connectivity value?
+		//	//lM(csid, nsid) = val;
+
+		//	// test: set a random value!
+		//	UINT64 nsid = UINT64( g_params.randGen()->rand() * float(lM.cols() - 1) );
+
+		//	//cout << "csid = " << csid << ", nsid = " << nsid << endl;
+		//	lM(csid, nsid) = g_params.randGen()->rand();
+		//}
+		lM(csid, csid) = 1.0f; // self is always indentical
 		// push children to the queue
 		for (int i = 0; i < 8; i++) {
 			if (N->_children[i])
@@ -303,10 +349,17 @@ void octree::octreeWriteContent(octreeNode * node, std::ofstream & file)
 		<< node->_statInfo << endl;
 }
 
-UINT64 volPos2SID(FLOATVECTOR3 fVolPos, int level)
+UINT64 normVolPos2SID(FLOATVECTOR3 fVolPos, int level)
 {
 	UINT64 numNodesPerDim = UINT64(1 << level);
-	FLOATVECTOR3 volPos = float(numNodesPerDim - 1) * fVolPos;
+	FLOATVECTOR3 volPos = float(numNodesPerDim) * fVolPos;
 	UINT64 sid = UINT64((volPos.z * numNodesPerDim + volPos.y) * numNodesPerDim + volPos.x);
 	return sid;
+}
+
+UINT64VECTOR3 normVolPos2Voxel(FLOATVECTOR3 fVolPos, int level)
+{
+	UINT64 numNodesPerDim = UINT64(1 << level);
+	FLOATVECTOR3 volPos = float(numNodesPerDim) * fVolPos;
+	return UINT64VECTOR3(UINT64(volPos.x), UINT64(volPos.y), UINT64(volPos.z));
 }

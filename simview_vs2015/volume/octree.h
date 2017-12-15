@@ -32,8 +32,8 @@ public:
 
 	int  levels() const { return _tree_levels; }
 	
-	friend UINT64 volPos2SID(FLOATVECTOR3 fVolPos, int level); // convert floating point 3D volume pos to uint64 serial id
-
+	friend UINT64        normVolPos2SID(FLOATVECTOR3 fVolPos, int level); // convert floating point 3D volume pos to uint64 serial id
+	friend UINT64VECTOR3 normVolPos2Voxel(FLOATVECTOR3 fVolPos, int level); // convert floating point (normalized) 3D vol pos to integer voxel pos
 protected:
 	// recursive functions
 	void octreeBuild(octreeNode* node);
