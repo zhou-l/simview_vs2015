@@ -361,6 +361,7 @@
     <None Include="shaders\debug.vert" />
     <None Include="shaders\simple.frag" />
     <None Include="shaders\simple.vert" />
+    <None Include="shaders\simple1DColormap.frag" />
     <None Include="shaders\simple2Dview.vert" />
     <None Include="shaders\simpleTex2D.frag" />
     <None Include="shaders\simpleTex2DColormapped.frag" />
@@ -370,7 +371,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="5_9_1" MocOptions="" />
+      <UserProperties MocDir=".\GeneratedFiles\$(ConfigurationName)" UicDir=".\GeneratedFiles" RccDir=".\GeneratedFiles" lupdateOptions="" lupdateOnBuild="0" lreleaseOptions="" Qt5Version_x0020_x64="5.9.1" MocOptions="" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

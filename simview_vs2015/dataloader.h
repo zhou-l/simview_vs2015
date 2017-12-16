@@ -13,6 +13,7 @@ public:
 
     bool loadCSVtoPointCloud(const QString& fileName);
 	bool loadEnsembleRunsTxt(const QString& folderName);
+	bool loadSingleRunTxt(const QString& fileName, std::vector<float>& vals);
 
 	void cleanData();
 

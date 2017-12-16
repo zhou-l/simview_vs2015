@@ -3,6 +3,7 @@
 #include "vertex.h"
 #include "KDtree.h"
 #include "spatialDataPt.h"
+#include <string>
 
 class VolumeData;
 class EnsembleVolBlock;
@@ -53,6 +54,21 @@ public:
 
 	void setOctreeLevel(int level) { _currOctreeLevel = level; }
 	int octreeLevel() const { return _currOctreeLevel; }
+
+	void currentRun(int run) { _currentRun = run; }
+	int currentRun() const { return _currentRun; }
+
+	void runFileFolder(const std::string& ff) { _runFileFolder = ff; }
+	const std::string& runFileFolder() const { return _runFileFolder; }
+
+	void meshFileName(const std::string& meshFile) { _meshFileName = meshFile; }
+	const std::string& meshFileName() const { return _meshFileName; }
+
+	void numRuns(int numRuns) { _numRuns = numRuns; }
+	int numRuns() const { return _numRuns; }
+
+	const std::vector< std::string >& runFileList() const { return _runFileList; }
+	void setRunFileList(const std::vector<std::string>& fileList) { _runFileList = fileList; }
 private:
     std::vector<std::vector<float>> _pointData;
     std::vector<std::vector<float>> _ensembleData;
@@ -71,7 +87,13 @@ private:
     int                             _ensStatNumNeighbors;
 
 	MTRand*                          _randGen;
-
+	//info about the ensemble data
+	int                              _currentRun; // the current run id
+	std::string                      _runFileFolder; // folder for ensemble files
+	std::vector< std::string >       _runFileList; // list of run files
+	int                              _numRuns; // number of runs in the folder
+	std::string                      _meshFileName; // file name of the mesh 
+	
 };
 
 #endif // PARAMS_H

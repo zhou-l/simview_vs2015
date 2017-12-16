@@ -150,6 +150,30 @@ bool DataLoader::loadEnsembleRunsTxt(const QString& folderName)
 	return true;
 }
 
+bool DataLoader::loadSingleRunTxt(const QString & fileName, vector<float>& vals)
+{
+	vals.clear();
+	ifstream ifin(fileName.toStdString().c_str());
+
+	if (!ifin.good())
+	{
+		cout << "Failed to open file " << fileName.toStdString() << endl;
+		ifin.close();
+		return false;
+	}
+	float val = 0.0f;
+	while (ifin >> val)
+	{
+		if (ifin.eof())
+			break; // try to read pass the end of file
+		else
+			vals.push_back(val);
+	}
+	ifin.close();
+
+	return true;
+}
+
 std::vector<std::vector<float> > DataLoader::pointData() const
 {
     return _pointData;

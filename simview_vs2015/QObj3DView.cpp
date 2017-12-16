@@ -6,7 +6,6 @@
 #include <QOpenGLShaderProgram>
 #include <QOpenGLDebugMessage>
 #include <QKeyEvent>
-#include "vertex.h"
 #include "input.h"
 #include "profiler.h"
 #include "debugdraw.h"
@@ -84,7 +83,8 @@ QPoint prevMousePos;
 QObj3DView::QObj3DView(QWidget* parent) :
     QOpenGLWidget(parent),
   m_frameCount(0),
-	m_program(NULL)
+	m_program(NULL),
+	m_programAux(NULL)
 {
 
 #ifdef    GL_DEBUG
@@ -106,6 +106,7 @@ QObj3DView::~QObj3DView()
     SAFE_DELETE(m_dataLoader);
     SAFE_DELETE(m_dataAnalyzer);
 	SAFE_DELETE(m_program);
+	SAFE_DELETE(m_programAux);
   makeCurrent();
   OpenGLError::popErrorHandler();
 }
@@ -149,9 +150,10 @@ void QObj3DView::initializeGL()
 		{
 			m_program = new QOpenGLShaderProgram(this);
 			m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple.vert");
-			m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple.frag");
+			m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple1DColormap.frag");
 			m_program->link();
 			m_program->bind();
+
 			// Cache Uniform Locations
 			u_modelToWorld = m_program->uniformLocation("modelToWorld");
 			u_worldToCamera = m_program->uniformLocation("worldToCamera");
@@ -159,7 +161,16 @@ void QObj3DView::initializeGL()
 			m_program->release();
 		}
        
-
+		if (m_programAux == NULL)
+		{
+			m_programAux = new QOpenGLShaderProgram(this);
+			m_programAux->addShaderFromSourceFile(QOpenGLShader::Vertex, "./shaders/simple.vert");
+			m_programAux->addShaderFromSourceFile(QOpenGLShader::Fragment, "./shaders/simple.frag");
+			m_programAux->link();
+			m_programAux->bind();
+		
+			m_programAux->release();
+		}
 
 		// Bounding box
 		if (!m_objectAddOn.isCreated())
@@ -187,29 +198,35 @@ void QObj3DView::initializeGL()
 		vector<Vertex> verts = g_params.vertices();
 		if (!verts.empty())
 		{
+			if (m_object.isCreated())
+				m_object.destroy();
+			if (m_vertex.isCreated())
+				m_vertex.destroy();
+
 			m_object.create();
 			m_object.bind();
 
 			// Create Buffer
 			m_vertex.create();
 			m_vertex.bind();
-			m_vertex.setUsagePattern(QOpenGLBuffer::StaticDraw);
+			m_vertex.setUsagePattern(QOpenGLBuffer::DynamicDraw);
 			m_vertex.allocate(&verts[0], verts.size() * sizeof(Vertex));
 
 
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, Vertex::PositionTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
-			glEnableVertexAttribArray(1);
-			glVertexAttribPointer(1, Vertex::ColorTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
-			/*	m_program->bind();
+			//glEnableVertexAttribArray(0);
+			//glVertexAttribPointer(0, Vertex::PositionTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+			//glEnableVertexAttribArray(1);
+			//glVertexAttribPointer(1, Vertex::ColorTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+				m_program->bind();
 			m_program->enableAttributeArray(0);
 			m_program->enableAttributeArray(1);
 			m_program->setAttributeBuffer(0, GL_FLOAT, Vertex::positionOffset(), Vertex::PositionTupleSize, Vertex::stride());
-			m_program->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());*/
+			m_program->setAttributeBuffer(1, GL_FLOAT, Vertex::colorOffset(), Vertex::ColorTupleSize, Vertex::stride());
 
+			m_program->release();
+			m_vertex.release();
 			// Release (unbind) all
 			m_object.release();
-			m_vertex.release();
 		}
 
     }
@@ -243,33 +260,39 @@ void QObj3DView::paintGL()
     m_program->setUniformValue(u_worldToCamera, m_camera.toMatrix());
     m_program->setUniformValue(u_cameraToView, m_projection);
     PROFILER_POP_GPU_MARKER();
-    {
-        QMatrix4x4 model2world;
-        model2world.setToIdentity();
-      PROFILER_PUSH_GPU_MARKER("Draw Object");
+	QMatrix4x4 model2world = m_transform;
+	PROFILER_PUSH_GPU_MARKER("Draw Object");
+	m_program->setUniformValue(u_modelToWorld, model2world);
+	m_object.bind();
+	//glDrawArrays(GL_TRIANGLES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
+	//glDrawArrays(GL_TRIANGLES, 0, g_params.vertices().size());
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, Vertex::PositionTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, Vertex::ColorTupleSize, GL_FLOAT, GL_FALSE, Vertex::stride(), 0);
+	glDrawArrays(GL_POINTS, 0, GLsizei(g_params.vertices().size()));
+	m_object.release();
+	PROFILER_POP_GPU_MARKER();
+	m_program->release();
+  }
 
-	  m_program->setUniformValue(u_modelToWorld, model2world);
+  if (m_programAux)
+  {
+	  m_programAux->bind();
+	  QMatrix4x4 model2world;
+	  model2world.setToIdentity();
+	  m_programAux->setUniformValue("modelToWorld", model2world);
+	  m_programAux->setUniformValue("worldToCamera",m_camera.toMatrix());
+	  m_programAux->setUniformValue("cameraToView", m_projection);
 	  // Draw bounding box
 	  m_objectAddOn.bind();
 	  glDrawArrays(GL_LINE_LOOP, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
 	  m_objectAddOn.release();
+	  m_programAux->release();
 
-	  model2world = m_transform;
-	  m_program->setUniformValue(u_modelToWorld, model2world);
-	  m_object.bind();
-      //m_program->setUniformValue(u_modelToWorld, model2world);
-      //glDrawArrays(GL_TRIANGLES, 0, sizeof(sg_vertexes) / sizeof(sg_vertexes[0]));
-      //glDrawArrays(GL_TRIANGLES, 0, g_params.vertices().size());
-      glDrawArrays(GL_POINTS, 0, GLsizei(g_params.vertices().size()));
-      m_object.release();
-      PROFILER_POP_GPU_MARKER();
-
-
-    }
-
-
-    m_program->release();
   }
+  
+
   PROFILER_POP_GPU_MARKER();
   PROFILER_EMIT_RESULTS();
 
@@ -325,11 +348,44 @@ bool QObj3DView::loadSimData()
 		return false;
 }
 
+void QObj3DView::setRun(int runId)
+{
+	if (m_object.isCreated() && m_vertex.isCreated())
+	{
+		vector<Vertex> verts;
+		// Convert to point data
+		bool runLoaded = updateRunData(runId, verts);
+		if (runLoaded)
+			cout << "Run "<<runId<<" is successfully loaded!" << endl;
+		else
+			cout << "Failed to load run "<<runId<<"!" << endl;
+
+		g_params.setVertices(verts);
+		if (m_vertex.isCreated() && m_object.isCreated())
+		{
+			m_object.bind();
+
+			m_vertex.bind();
+			void* ptr = m_vertex.map(QOpenGLBuffer::WriteOnly);
+			memcpy(ptr, &verts[0], verts.size() * sizeof(Vertex));
+			m_vertex.unmap();
+
+			m_vertex.release();
+			m_object.release();
+		}
+
+		update();
+	}
+}
+
 void QObj3DView::teardownGL()
 {
   // Actually destroy our OpenGL information
   m_object.destroy();
   m_vertex.destroy();
+
+  m_objectAddOn.destroy();
+  m_vertexAddOn.destroy();
 }
 
 bool QObj3DView::loadData()
@@ -339,7 +395,8 @@ bool QObj3DView::loadData()
     vector<Vertex> verts;
     // Load mesh file
     cout << "Loading mesh data...";
-    bool fileLoaded = m_dataLoader->loadCSVtoPointCloud(filePrefix+fileName);
+	QString meshFileName = filePrefix + fileName;
+    bool fileLoaded = m_dataLoader->loadCSVtoPointCloud(meshFileName);
     cout << "finished!" << endl;
     if(!fileLoaded || m_dataLoader->attrib_names().size() < 3)
     {
@@ -348,12 +405,14 @@ bool QObj3DView::loadData()
          cout << "Failed to load csv data!" << endl;
          return false;
     }
+	g_params.meshFileName(meshFileName.toStdString());
     g_params.setPointData(m_dataLoader->pointData());
 
     // Load run files
     cout << "Loading ensemble runs...";
     QString runFileFolder = tr("C:/MyData/Utah_heart_ischemia/201701_Conductivity/simRuns/dataset_test");
     bool runFilesLoaded = m_dataLoader->loadEnsembleRunsTxt(runFileFolder);
+	g_params.runFileFolder(runFileFolder.toStdString());
     g_params.setEnsembleData(m_dataLoader->ensembleData());
     cout << "finished!" << endl;
     //clean data in dataloader
@@ -362,24 +421,21 @@ bool QObj3DView::loadData()
 
 
     // Convert to point data
-    cout << "Creating vertices for rendering...";
-    vector<vector<float> > pointData = g_params.pointData();
-    verts.resize(g_params.pointData().size());
-    // prepare for KD-tree data
-    vector<FLOATVECTOR3> fvPtData(pointData.size());
-    for(vector<vector<float> >::const_iterator IT = pointData.begin(); IT!= pointData.end(); ++IT)
-    {
-        size_t id = IT - pointData.begin();
-        FLOATVECTOR3 fv = FLOATVECTOR3((*IT)[0], (*IT)[1], (*IT)[2]);
-        fvPtData[id] = fv;
-        QVector3D posV = QVector3D(fv.x, fv.y, fv.z)/50.0f;
-        QVector3D colV = QVector3D(abs(posV.x()), abs(posV.y()), abs(posV.z())) ;
-        verts[id] = Vertex(posV, colV);
-    }
-    g_params.setVertices(verts);
-    cout << "finished!" << endl;
+	bool runLoaded = updateRunData(g_params.currentRun(), verts);
+	if (runLoaded)
+		cout << "Selected run is successfully loaded!" << endl;
+	else
+		cout << "Failed to load selected run!" << endl;
 
     // Rasterize to regular grid
+	vector<vector<float> >  pointData = g_params.pointData();
+	vector<FLOATVECTOR3> fvPtData(pointData.size());
+	for (vector<vector<float> >::const_iterator IT = pointData.begin(); IT != pointData.end(); ++IT)
+	{
+		size_t id = IT - pointData.begin();
+		FLOATVECTOR3 fv = FLOATVECTOR3((*IT)[0], (*IT)[1], (*IT)[2]);
+		fvPtData[id] = fv;
+	}
     vector<UINT64VECTOR3> posTable;
     UINT64VECTOR3 gridDim(128, 128, 128);
     VolumeData* ptCntVol = NULL;
@@ -410,6 +466,81 @@ bool QObj3DView::loadData()
     cout << "global KD tree node #= " << g_params.meshKDTree_unsafe().size() << endl;
     return true;
 }
+
+bool QObj3DView::updateRunData(int runId, std::vector<Vertex>& verts)
+{
+	//if ()
+	//	return;
+	// Convert to point data
+	cout << "Creating vertices for rendering...";
+	vector<vector<float> > pointData = g_params.pointData();
+	verts.resize(g_params.pointData().size());
+	// prepare for KD-tree data
+	vector<FLOATVECTOR3> fvPtData(pointData.size());
+
+	vector<float> currentRunVals;
+	bool usePosAsColor = false;
+	if (g_params.currentRun() < g_params.ensembleData().size())
+		currentRunVals = g_params.ensembleData().at(g_params.currentRun());
+	else
+	{
+		// Load the run file
+		QString fileName = g_params.runFileList().at(runId).c_str();
+		if (m_dataLoader->loadSingleRunTxt(fileName, currentRunVals))
+		{
+			cout << "Run " << fileName.toStdString() << " is loaded." << endl;
+		}
+		else
+		{
+			cout << "Failed to load " << fileName.toStdString() << " file!" << endl;
+			usePosAsColor = true;
+		}
+	}
+
+	float minVal = numeric_limits<float>::max();
+	float maxVal = -numeric_limits<float>::max();
+	if (currentRunVals.size() != pointData.size())
+		usePosAsColor = true;
+	else
+	{
+		// normalize run values
+		for (vector<float>::iterator IT = currentRunVals.begin(); IT != currentRunVals.end(); ++IT)
+		{
+			minVal = MIN(minVal, *IT);
+			maxVal = MAX(maxVal, *IT);
+		}
+		cout << "Min val = " << minVal << ", max val = " << maxVal << endl;
+		//float invRange = (minVal == maxVal) ? 0.0f : 1.0f / (maxVal - minVal);
+		//for (vector<float>::iterator IT = currentRunVals.begin(); IT != currentRunVals.end(); ++IT)
+		//{
+		//	*IT = (*IT - minVal) * invRange;
+		//}
+	}
+	for (vector<vector<float> >::const_iterator IT = pointData.begin(); IT != pointData.end(); ++IT)
+	{
+		size_t id = IT - pointData.begin();
+		FLOATVECTOR3 fv = FLOATVECTOR3((*IT)[0], (*IT)[1], (*IT)[2]);
+		fvPtData[id] = fv;
+		QVector3D posV = QVector3D(fv.x, fv.y, fv.z) / 50.0f;
+		// For testing: use position as color data
+		QVector3D colV;
+		//if (usePosAsColor)
+		//	colV = QVector3D(abs(posV.x()), abs(posV.y()), abs(posV.z()));
+		//else
+		{
+			// TODO: use ensemble values as color data
+			float val = currentRunVals[id];
+			colV = QVector3D(val, val, val);
+		}
+
+		//QVector3D colV = QVector3D();
+		verts[id] = Vertex(posV, colV);
+	}
+	g_params.setVertices(verts);
+	cout << "finished!" << endl;
+	return !usePosAsColor;
+}
+
 
 
 void QObj3DView::analyzeData()

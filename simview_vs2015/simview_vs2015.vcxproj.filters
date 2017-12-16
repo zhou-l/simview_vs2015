@@ -302,5 +302,8 @@
     <None Include="shaders\simpleTex2DColormapped.frag">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="shaders\simple1DColormap.frag">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

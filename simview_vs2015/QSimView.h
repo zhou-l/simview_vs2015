@@ -15,8 +15,9 @@ public:
 
 protected:
 	void keyPressEvent(QKeyEvent* event);
-	protected slots:
+protected slots:
 	void octreeLevelChanged(int value);
+	void setRunId(int value);
 private:
 	void setupUi();
 	void loadData(); // set pre-defined data for testing first

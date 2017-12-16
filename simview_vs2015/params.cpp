@@ -1,6 +1,8 @@
 #include "params.h"
+#include "SysTools.h"
 #include "MersenneTwister.h"
 
+using namespace std;
 
 Params::Params():
     _meshKDtree(3)
@@ -11,6 +13,24 @@ Params::Params():
 	ensStatNumNeighbors(8);
 
 	_randGen = new MTRand();
+
+	currentRun(0); // should set to the mean run
+	
+	string folder = "C:/MyData/Utah_heart_ischemia/201701_Conductivity/simRuns/dataset_test";
+	runFileFolder(folder);
+
+	string meshFile = "C:\\MyData\\Utah_heart_ischemia\\201701_Conductivity\\mesh\\heartPts.csv";
+	meshFileName(meshFile);
+	// Get number of runs 
+	vector<string> folderContent = SysTools::GetDirContents(folder, "*", "txt");
+	vector<string> runFileList;
+	for (size_t i = 0; i < folderContent.size(); i++)
+	{
+		if (folderContent[i].find("run") != std::string::npos)
+			runFileList.push_back(folderContent[i]);
+	}
+	setRunFileList(runFileList);
+	numRuns(int(runFileList.size()));
 }
 
 Params::~Params()

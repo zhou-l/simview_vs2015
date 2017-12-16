@@ -15,7 +15,7 @@
 #include "OpenGL\OpenGLBuffer"
 #include "OpenGL\OpenGLFunctions"
 #include "OpenGL\OpenGLVertexArrayObject"
-
+#include "vertex.h"
 
 class Profiler;
 class FrameResult;
@@ -41,7 +41,8 @@ public:
   void paintGL();
 
   bool loadSimData();  // load simulation runs and mesh and set vertex buffer
-
+  void setRun(int runId);
+  
 protected slots:
   void teardownGL();
   void update();
@@ -60,6 +61,8 @@ protected:
   void moveEvent(QMoveEvent *ev);
 
   bool loadData();
+  bool updateRunData(int runId, std::vector<Vertex>& verts); // returns whether the run is loaded
+
   void analyzeData();
 private:
   // OpenGL State Information
@@ -70,6 +73,7 @@ private:
   OpenGLVertexArrayObject m_object;
   OpenGLVertexArrayObject m_objectAddOn;
   //OpenGLShaderProgram *m_program;
+  QOpenGLShaderProgram *m_programAux;
   QOpenGLShaderProgram *m_program;
   QOpenGLDebugLogger *m_debugLogger;
   Profiler *m_profiler;
@@ -87,6 +91,7 @@ private:
   // Data loader
   DataLoader*     m_dataLoader;
   DataAnalyzer*   m_dataAnalyzer;
+  bool m_isInit;
 
   // Private Helpers
   void printVersionInformation();
@@ -94,7 +99,7 @@ private:
   // arcball
   QVector3D get_arcball_vector(int x, int y);
 
- 
+
 };
 
 #endif // WINDOW_H

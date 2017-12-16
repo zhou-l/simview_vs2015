@@ -20,9 +20,15 @@
      <height>400</height>
     </size>
    </property>
-   <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
      <widget class="QFrame" name="frame_objView">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="frameShape">
        <enum>QFrame::StyledPanel</enum>
       </property>
@@ -31,6 +37,30 @@
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout_objView"/>
      </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="label_2">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>Runs:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QSlider" name="horizontalSlider_runs">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>
@@ -126,8 +156,8 @@
    <slot>octreeLevelChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>85</x>
-     <y>1531</y>
+     <x>142</x>
+     <y>1244</y>
     </hint>
     <hint type="destinationlabel">
      <x>523</x>
@@ -135,8 +165,25 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>horizontalSlider_runs</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>QSimView</receiver>
+   <slot>setRunId(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>390</x>
+     <y>1234</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>1918</x>
+     <y>1005</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>octreeLevelChanged(int)</slot>
+  <slot>setRunId(int)</slot>
  </slots>
 </ui>

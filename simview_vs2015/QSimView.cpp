@@ -47,13 +47,9 @@ void QSimView::setupUi()
 	dockWidget_graphView_2->setMinimumSize(QSize(600, 600));
 
 
-
 #ifdef    GL_DEBUG
 	format.setOption(QSurfaceFormat::DebugContext);
 #endif // GL_DEBUG
-
-
-
 
 	_objView = new QObj3DView(this);
 	horizontalLayout_objView->addWidget(_objView);
@@ -66,6 +62,7 @@ void QSimView::setupUi()
 	_graphView->resize(QSize(600, 600));
 
 
+	horizontalSlider_runs->setMaximum(g_params.numRuns() - 1);
 	//resize(QSize(1024, 768));
 }
 
@@ -78,5 +75,24 @@ void QSimView::octreeLevelChanged(int value)
 			g_params.setOctreeLevel(value);
 			_graphView->octreeLevelChanged(g_params.octreeLevel());
 		}
+	}
+}
+
+void QSimView::setRunId(int value)
+{
+	// Check the folder of runs
+	int runs = g_params.numRuns();
+	if (value < runs)
+	{
+		if (value != g_params.currentRun())
+		{
+			if (_objView)
+				_objView->setRun(value);
+
+
+			g_params.currentRun(value);
+
+		}
+
 	}
 }
